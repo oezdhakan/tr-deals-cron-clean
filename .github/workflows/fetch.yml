@@ -1,0 +1,14 @@
+name: Fetch Deals
+
+on:
+  schedule:
+    - cron: "0 * * * *"   # stündlich (UTC). Für alle 20 Min: "*/20 * * * *"
+  workflow_dispatch:      # manueller Start via GitHub UI
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call /api/fetch-deals
+        run: |
+          curl -sS "https://tr-deals-cron-clean.vercel.app/api/fetch-deals?secret=${{ secrets.FETCH_SECRET }}" | tee /dev/stderr
