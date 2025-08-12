@@ -1,28 +1,39 @@
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-// neu (relativ, funktioniert sofort)
+// Relativer Import (Option A)
 import { refreshAllSources } from '../../../../lib/refresh';
 
+function json(body, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { 'content-type': 'application/json' },
+  });
+}
 
-export async function POST(req) {
+function isAuthorized(req) {
   const auth = req.headers.get('authorization') || '';
   const token = auth.replace(/^Bearer\s+/i, '');
-  if (token !== process.env.CRON_SECRET) {
-    return new Response(JSON.stringify({ ok: false, error: 'Unauthorized' }), {
-      status: 401,
-      headers: { 'content-type': 'application/json' },
-    });
-  }
+  const qsSecret = new URL(req.url).searchParams.get('secret');
+  const expect = process.env.CRON_SECRET;
+  return token === expect || qsSecret === expect;
+}
+
+async function handle() {
   try {
     const result = await refreshAllSources();
-    return new Response(JSON.stringify({ ok: true, ...result }), {
-      headers: { 'content-type': 'application/json' },
-    });
+    return json({ ok: true, ...result });
   } catch (e) {
-    return new Response(JSON.stringify({ ok: false, error: String(e?.message || e) }), {
-      status: 500,
-      headers: { 'content-type': 'application/json' },
-    });
+    return json({ ok: false, error: String(e?.message || e) }, 500);
   }
+}
+
+export async function POST(req) {
+  if (!isAuthorized(req)) return json({ ok: false, error: 'Unauthorized' }, 401);
+  return handle();
+}
+
+export async function GET(req) {
+  if (!isAuthorized(req)) return json({ ok: false, error: 'Unauthorized' }, 401);
+  return handle();
 }
