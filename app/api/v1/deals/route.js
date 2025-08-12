@@ -3,11 +3,12 @@ export const dynamic = 'force-dynamic';
 import { createClient } from '@supabase/supabase-js';
 
 function makeSupabase() {
-  const url = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const url = process.env.SUPABASE_URL;              // <<< nur Server-Var
+  const key = process.env.SUPABASE_SERVICE_ROLE;     // <<< nur Server-Var
   if (!url || !key) return null;
   return createClient(url, key, { auth: { persistSession: false } });
 }
+
 
 function json(obj, status = 200) {
   return new Response(JSON.stringify(obj), {
