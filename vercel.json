@@ -1,5 +1,0 @@
-{
-  "crons": [
-    { "path": "/api/fetch-deals", "schedule": "*/20 * * * *" }
-  ]
-}
