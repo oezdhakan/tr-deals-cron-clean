@@ -8,6 +8,10 @@ export async function GET() {
   const hasPublicKey = !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   return new Response(JSON.stringify({
-    hasServerUrl, hasServerKey, hasPublicUrl, hasPublicKey
+    ok: true,
+    hasServerUrl,
+    hasServerKey,
+    hasPublicUrl,
+    hasPublicKey
   }), { headers: { 'content-type': 'application/json' }});
 }
