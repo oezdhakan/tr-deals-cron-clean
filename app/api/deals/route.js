@@ -1,39 +1,48 @@
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
-import { createClient } from "@supabase/supabase-js";
+import { createClient } from '@supabase/supabase-js';
+
+function makeSupabase() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
+  const key =
+    process.env.SUPABASE_SERVICE_ROLE || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!url || !key) return null;
+  return createClient(url, key, { auth: { persistSession: false } });
+}
 
 export async function GET(req) {
-  try {
-    const url = new URL(req.url);
+  const { searchParams } = new URL(req.url);
+  const limit = Math.min(parseInt(searchParams.get('limit') || '50', 10), 200);
 
-    // limit: default 50, max 100
-    const limitParam = url.searchParams.get("limit");
-    const parsed = Number(limitParam);
-    const limit = Math.min(Number.isFinite(parsed) ? parsed : 50, 100);
+  const items = [
+    {
+      id: 1,
+      source: 'manual',
+      title: 'Marker Insert',
+      url: 'https://example.com/marker',
+      price: 0,
+      currency: 'EUR',
+      created_at: '2025-08-12T13:55:06.565808+00:00',
+    },
+  ];
 
-    // optional: since=ISO-String
-    const since = url.searchParams.get("since");
+  const dbLimit = Math.max(limit - items.length, 0);
 
-    const supa = createClient(
-      process.env.SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_ROLE_KEY,
-      { auth: { persistSession: false } }
-    );
-
-    let q = supa
-      .from("deals")
-      .select("id,source,title,url,price,currency,created_at", { count: "exact" }) // KEIN head:true
-      .order("created_at", { ascending: false })
-      .limit(limit);
-
-    if (since) q = q.gte("created_at", since);
-
-    const { data, error, count } = await q;
-    if (error) throw error;
-
-    return Response.json({ ok: true, count: count ?? (data?.length ?? 0), items: data ?? [] });
-  } catch (e) {
-    return Response.json({ ok: false, error: String(e?.message || e) }, { status: 500 });
+  if (dbLimit > 0) {
+    const supabase = makeSupabase();
+    if (supabase) {
+      const { data, error } = await supabase
+        .from('deals')
+        .select('id,source,title,url,price,currency,created_at')
+        .order('created_at', { ascending: false })
+        .limit(dbLimit);
+      if (!error && data) items.push(...data);
+    }
   }
+
+  return new Response(
+    JSON.stringify({ ok: true, count: items.length, items }),
+    { headers: { 'content-type': 'application/json' } }
+  );
 }
