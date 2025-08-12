@@ -10,10 +10,7 @@ async function insertDemoRowsIfSupabase() {
   const { supabaseAdmin } = await import("../_lib/supabaseAdmin.js");
   const client = supabaseAdmin();
 
-  const rows = [
-    { source: "demo", title: "Test Deal 1", url: "https://example.com/a", price: 9.99, currency: "EUR", hash: "demo:https://example.com/a" },
-    { source: "demo", title: "Test Deal 2", url: "https://example.com/b", price: 19.99, currency: "EUR", hash: "demo:https://example.com/b" }
-  ];
+  const rows = [];
 
   const { data, error } = await client.from("deals").upsert(rows, { onConflict: "hash" }).select();
   if (error) throw error;
