@@ -17,7 +17,6 @@ export async function GET(req) {
 
   const items = [
     {
-      id: 1,
       source: 'manual',
       title: 'Marker Insert',
       url: 'https://example.com/marker',
