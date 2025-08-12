@@ -15,33 +15,29 @@ export async function GET(req) {
   const { searchParams } = new URL(req.url);
   const limit = Math.min(parseInt(searchParams.get('limit') || '50', 10), 200);
 
-  const items = [
-    {
-      source: 'manual',
-      title: 'Marker Insert',
-      url: 'https://example.com/marker',
-      price: 0,
-      currency: 'EUR',
-      created_at: '2025-08-12T13:55:06.565808+00:00',
-    },
-  ];
-
-  const dbLimit = Math.max(limit - items.length, 0);
-
-  if (dbLimit > 0) {
-    const supabase = makeSupabase();
-    if (supabase) {
-      const { data, error } = await supabase
-        .from('deals')
-        .select('id,source,title,url,price,currency,created_at')
-        .order('created_at', { ascending: false })
-        .limit(dbLimit);
-      if (!error && data) items.push(...data);
-    }
+  const supabase = makeSupabase();
+  if (!supabase) {
+    return new Response(JSON.stringify({ ok: false, error: 'Missing SUPABASE_URL or KEY' }), {
+      status: 500,
+      headers: { 'content-type': 'application/json' },
+    });
   }
 
-  return new Response(
-    JSON.stringify({ ok: true, count: items.length, items }),
-    { headers: { 'content-type': 'application/json' } }
-  );
+  const { data, error } = await supabase
+    .from('deals')
+    .select('id,source,title,url,price,currency,created_at')
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    return new Response(JSON.stringify({ ok: false, error: error.message }), {
+      status: 500,
+      headers: { 'content-type': 'application/json' },
+    });
+  }
+
+  const items = data || [];
+  return new Response(JSON.stringify({ ok: true, count: items.length, items }), {
+    headers: { 'content-type': 'application/json' },
+  });
 }
