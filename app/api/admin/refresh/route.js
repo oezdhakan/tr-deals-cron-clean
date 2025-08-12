@@ -1,7 +1,9 @@
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-import { refreshAllSources } from '@/lib/refresh';
+// neu (relativ, funktioniert sofort)
+import { refreshAllSources } from '../../../../lib/refresh';
+
 
 export async function POST(req) {
   const auth = req.headers.get('authorization') || '';
