@@ -1,5 +1,8 @@
 {
   "crons": [
-    { "path": "/api/fetch-deals", "schedule": "0 6 * * *" }
+    {
+      "path": "/api/admin/refresh?secret=mysupersecretkey983274",
+      "schedule": "0 6 * * *"
+    }
   ]
 }
