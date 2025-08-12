@@ -1,44 +1,31 @@
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
-const VALID_SECRET = process.env.CRON_SECRET;
+import { refreshByName } from '../../../lib/refresh.js';
 
-async function insertDemoRowsIfSupabase() {
-  const hasSupabase = !!(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);
-  if (!hasSupabase) return { mode: "fallback", inserted: 0 };
-
-  const { supabaseAdmin } = await import("../_lib/supabaseAdmin.js");
-  const client = supabaseAdmin();
-
-  const rows = [];
-
-  const { data, error } = await client.from("deals").upsert(rows, { onConflict: "hash" }).select();
-  if (error) throw error;
-  return { mode: "supabase", inserted: data?.length ?? 0 };
+function json(body, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { 'content-type': 'application/json' }
+  });
 }
 
 export async function GET(req) {
+  const url = new URL(req.url);
+  const secret = url.searchParams.get('secret');
+  const source = url.searchParams.get('source'); // z.B. demo-json | dummyjson-products
+
+  if (secret !== process.env.CRON_SECRET) {
+    return json({ ok: false, error: 'Unauthorized' }, 401);
+  }
+  if (!source) {
+    return json({ ok: false, error: 'Missing ?source=' }, 400);
+  }
+
   try {
-    const isVercelCron = req.headers.get("x-vercel-cron") === "1";
-    const { searchParams } = new URL(req.url);
-    const secret = searchParams.get("secret");
-
-    // Secret nur bei manuellen Aufrufen verlangen
-    if (!isVercelCron) {
-      if (!VALID_SECRET) return Response.json({ ok: false, error: "CRON_SECRET not set" }, { status: 500 });
-      if (secret !== VALID_SECRET) return Response.json({ ok: false, error: "Invalid secret" }, { status: 401 });
-    }
-
-    const { mode, inserted } = await insertDemoRowsIfSupabase();
-
-    return Response.json({
-      ok: true,
-      source: isVercelCron ? "vercel-cron" : "manual",
-      mode,
-      inserted,
-      time: new Date().toISOString()
-    });
+    const result = await refreshByName(source);
+    return json({ ok: true, source, ...result, time: new Date().toISOString() });
   } catch (e) {
-    return Response.json({ ok: false, error: String(e?.message || e) }, { status: 500 });
+    return json({ ok: false, source, error: String(e?.message || e) }, 500);
   }
 }
