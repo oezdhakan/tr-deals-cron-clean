@@ -1,8 +1,8 @@
-import basicAuth from "../../middleware/basicAuth";
+import withAuthOrSecret from "../../lib/withAuthOrSecret";
 
-export default function handler(req, res) {
-  return basicAuth(req, res, () => {
-    // 👇 Hier dein bisheriger Logik-Code
-    res.status(200).json({ ok: true, route: "deals-list", auth: "passed" });
-  });
+function coreHandler(req, res) {
+  // 👉 Hier kommt (später) deine echte Logik hin
+  return res.status(200).json({ ok: true, route: "deals-list" });
 }
+
+export default withAuthOrSecret(coreHandler);
