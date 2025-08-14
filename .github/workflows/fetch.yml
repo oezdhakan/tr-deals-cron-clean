@@ -1,14 +1,40 @@
-name: Fetch Deals
+name: Fetch Deals (Scheduled)
 
 on:
   schedule:
-    - cron: "0 * * * *"   # stündlich (UTC). Für alle 20 Min: "*/20 * * * *"
-  workflow_dispatch:      # manueller Start via GitHub UI
+    # alle 20 Minuten (GitHub Actions: mind. ~5-15 min Genauigkeit, leichte Drifts möglich)
+    - cron: "*/20 * * * *"
+  workflow_dispatch: {}  # manueller Start aus dem UI
 
 jobs:
   fetch:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
-      - name: Call /api/fetch-deals
+      - name: Hit fetch-deals via secret URL
+        env:
+          CRON_URL: ${{ secrets.CRON_URL }}
         run: |
-          curl -sS "https://tr-deals-cron-clean.vercel.app/api/fetch-deals?secret=${{ secrets.FETCH_SECRET }}" | tee /dev/stderr
+          set -e
+          echo "Trigger: $(date -Iseconds)"
+          STATUS=$(curl -s -o resp.json -w "%{http_code}" "$CRON_URL")
+          echo "HTTP $STATUS"
+          echo "Response:"
+          cat resp.json
+          # Fehler, wenn HTTP-Code >= 400
+          if [ "$STATUS" -ge 400 ]; then
+            exit 1
+          fi
+
+      # --- Alternative mit Basic Auth (falls du ohne ?secret arbeiten willst) ---
+      # - name: Hit fetch-deals via Basic Auth
+      #   env:
+      #     BASIC_AUTH_USER: ${{ secrets.BASIC_AUTH_USER }}
+      #     BASIC_AUTH_PASS: ${{ secrets.BASIC_AUTH_PASS }}
+      #   run: |
+      #     set -e
+      #     URL="https://tr-deals-cron-clean.vercel.app/api/fetch-deals"
+      #     STATUS=$(curl -s -o resp.json -w "%{http_code}" -u "${BASIC_AUTH_USER}:${BASIC_AUTH_PASS}" "$URL")
+      #     echo "HTTP $STATUS"
+      #     cat resp.json
+      #     if [ "$STATUS" -ge 400 ]; then exit 1; fi
