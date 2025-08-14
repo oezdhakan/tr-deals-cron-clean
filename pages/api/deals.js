@@ -1,23 +1,17 @@
 import withAuthOrSecret from "../../lib/withAuthOrSecret";
+import { listDeals } from "../../lib/db";
 
 async function coreHandler(req, res) {
   try {
-    // Beispiel: hier deine echte DB-Lese-Logik einfügen
-    // const deals = await db.getDeals();
-    // return res.status(200).json({ ok: true, count: deals.length, items: deals });
+    const { limit = "50", offset = "0" } = req.query || {};
+    const data = await listDeals({ limit, offset });
 
-    // Temporär für Test:
-    return res.status(200).json({
-      ok: true,
-      route: "deals",
-      mode: "real-logic-placeholder"
-    });
-
+    if (!data.ok) {
+      return res.status(500).json({ ok: false, error: data.error || "List failed" });
+    }
+    return res.status(200).json({ ok: true, ...data });
   } catch (err) {
-    return res.status(500).json({
-      ok: false,
-      error: String(err?.message || err)
-    });
+    return res.status(500).json({ ok: false, error: String(err?.message || err) });
   }
 }
 
