@@ -4,7 +4,10 @@ async function coreHandler(req, res) {
   const hasEnv = Boolean(process.env.DATABASE_URL);
   try {
     const { Pool } = await import("pg");
-    const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+    const pool = new Pool({
+      connectionString: process.env.DATABASE_URL,
+      ssl: { rejectUnauthorized: false }    // <-- hier auch!
+    });
     const r = await pool.query("select now() as ts");
     await pool.end();
     return res.status(200).json({ ok: true, hasEnv, pgNow: r?.rows?.[0]?.ts || null });
