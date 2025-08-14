@@ -1,8 +1,7 @@
 import withAuthOrSecret from "../../lib/withAuthOrSecret";
 import { upsertDeals } from "../../lib/db";
 
-// 🔧 Quelle(n) – aktuell nur ein Dummy-Eintrag.
-// Hier kommen später die echten Fetch-Logiken rein.
+// Dummy-Quelle (später durch echte Quellen ersetzen)
 async function fetchFromSources() {
   return [
     {
