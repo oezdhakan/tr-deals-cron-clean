@@ -1,24 +1,24 @@
 import withAuthOrSecret from "../../lib/withAuthOrSecret";
 import { upsertDeals } from "../../lib/db";
-
-// Dummy-Quelle (später durch echte Quellen ersetzen)
-async function fetchFromSources() {
-  return [
-    {
-      source: "manual",
-      title: "Marker Insert",
-      url: "https://example.com/marker",
-      price: 0,
-      currency: "EUR"
-    }
-  ];
-}
+import { loadAllSources } from "../../lib/sources";
 
 async function coreHandler(req, res) {
   try {
-    const items = await fetchFromSources();
-    const result = await upsertDeals(items);
+    // 1) Echte Quellen (ENV: DEALS_SOURCE_URLS)
+    let items = await loadAllSources();
 
+    // 2) Fallback: Wenn keine Quellen konfiguriert oder leer → 1 Dummy
+    if (!items || items.length === 0) {
+      items = [{
+        source: "manual",
+        title: "Marker Insert",
+        url: "https://example.com/marker",
+        price: 0,
+        currency: "EUR"
+      }];
+    }
+
+    const result = await upsertDeals(items);
     if (!result.ok) {
       return res.status(500).json({ ok: false, error: result.error || "Insert failed" });
     }
@@ -26,6 +26,7 @@ async function coreHandler(req, res) {
     return res.status(200).json({
       ok: true,
       route: "fetch-deals",
+      total: items.length,
       ...result,
       triggeredAt: new Date().toISOString()
     });
