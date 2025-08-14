@@ -1,24 +1,37 @@
 import withAuthOrSecret from "../../lib/withAuthOrSecret";
+import { upsertDeals } from "../../lib/db";
+
+// 🔧 Quelle(n) – aktuell nur ein Dummy-Eintrag.
+// Hier kommen später die echten Fetch-Logiken rein.
+async function fetchFromSources() {
+  return [
+    {
+      source: "manual",
+      title: "Marker Insert",
+      url: "https://example.com/marker",
+      price: 0,
+      currency: "EUR"
+    }
+  ];
+}
 
 async function coreHandler(req, res) {
   try {
-    // Beispiel: Hier deine echte Logik einfügen
-    // Falls du vorher z.B. externe APIs oder DB-Abfragen hattest:
-    // const data = await getDealsFromSources();
-    // return res.status(200).json({ ok: true, count: data.length, items: data });
+    const items = await fetchFromSources();
+    const result = await upsertDeals(items);
 
-    // Temporär für den Test:
+    if (!result.ok) {
+      return res.status(500).json({ ok: false, error: result.error || "Insert failed" });
+    }
+
     return res.status(200).json({
       ok: true,
       route: "fetch-deals",
-      mode: "real-logic-placeholder"
+      ...result,
+      triggeredAt: new Date().toISOString()
     });
-
   } catch (err) {
-    return res.status(500).json({
-      ok: false,
-      error: String(err?.message || err)
-    });
+    return res.status(500).json({ ok: false, error: String(err?.message || err) });
   }
 }
 
