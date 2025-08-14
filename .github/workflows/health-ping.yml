@@ -1,0 +1,20 @@
+name: Health Ping
+
+on:
+  schedule:
+    - cron: "0 8 * * *"   # täglich 08:00 CET/CEST (GH Actions rechnet in UTC; passe bei Bedarf an)
+  workflow_dispatch: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Hit ping via secret
+        env:
+          PING_URL: https://tr-deals-cron-clean.vercel.app/api/ping?secret=mysupersecretkey983274
+        run: |
+          set -e
+          STATUS=$(curl -s -o resp.json -w "%{http_code}" "$PING_URL")
+          echo "HTTP $STATUS"
+          cat resp.json
+          if [ "$STATUS" -ge 400 ]; then exit 1; fi
